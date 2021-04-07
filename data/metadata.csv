@@ -1,0 +1,5 @@
+Variable,Description
+Sample,Sample number made up from either control (c) or test (t) and clone nr
+OD,Optical density expressed in relative value to the baseline of 0.54642
+loganswer,logarhitmic transformtion of the optical density value by log(OD)
+conc,Calculated concentration of the ApoA1 protein in each sample expressed in ng/L
