@@ -18,6 +18,16 @@ ui <- fluidPage(
                       accept = c("text/csv",
                                  "text/comma-separated-values,text/plain",
                                  ".csv")),
+            # Input: Select a meta-data-file ----
+            fileInput("file2", "Choose a CSV META-DATA File",
+                      multiple = FALSE,
+                      accept = c("text/csv",
+                                 "text/comma-separated-values,text/plain",
+                                 ".csv")),
+            # Provide Title for your file
+            textInput("title",
+                      "Please provide a short title to identyfy file contents",
+                      "Experiment X"),
 
             # Horizontal line ----
             tags$hr(),
@@ -48,12 +58,7 @@ ui <- fluidPage(
                          choices = c(Head = "head",
                                      All = "all"),
                          selected = "head"),
-            # Input: Select a meta-data-file ----
-            fileInput("file2", "Choose a CSV META-DATA File",
-                      multiple = FALSE,
-                      accept = c("text/csv",
-                                 "text/comma-separated-values,text/plain",
-                                 ".csv"))
+            actionButton("save","SAVE your data")
         ),
 
         # Main panel for displaying outputs ----
@@ -149,6 +154,20 @@ server <- function(input, output) {
             return(df)
         }
 
+    })
+    # save the data to server upon button click
+    observeEvent(input$save, {
+
+        file.copy(input$file1$datapath, paste0("saved_data/",
+                                                Sys.time() %>% as.character() %>% gsub(pattern = "-| |:",replacement = "_"),
+                                               "_",
+                                               input$title %>% gsub(pattern = "-| |:",replacement = "_"),
+                                               ".csv"))
+        file.copy(input$file2$datapath, paste0("saved_data/",
+                                                Sys.time() %>% as.character() %>% gsub(pattern = "-| |:",replacement = "_"),
+                                               "_",
+                                               input$title %>% gsub(pattern = "-| |:",replacement = "_"),
+                                               "_meta.csv"))
     })
 
 }
