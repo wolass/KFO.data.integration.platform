@@ -14,18 +14,25 @@ ui <- fluidPage(
         sidebarPanel(
 
             # Input: Select a file ----
-            fileInput("file1", "Choose a CSV DATA File",
+            fileInput("file1", "Choose a DATA File (excel or csv)",
                       multiple = FALSE,
                       accept = c("text/csv",
                                  "text/comma-separated-values,text/plain",
                                  ".csv")),
+            # download template for data
+            downloadButton("template_data", "Download a template"),
+            # Horizontal line ----
+            tags$hr(),
             # Input: Select a meta-data-file ----
-            fileInput("file2", "Choose a CSV META-DATA File",
+            fileInput("file2", "Choose a META-DATA File (excel or csv)",
                       multiple = FALSE,
                       accept = c("text/csv",
                                  "text/comma-separated-values,text/plain",
                                  ".csv")),
-            # Provide Title for your file
+            #download template for metadata
+            downloadButton("template_metadata", "Download a template"),
+            # Horizontal line ----
+            tags$hr(),# Provide Title for your file
             textInput("title",
                       "Please provide a short title to identyfy file contents",
                       "Experiment X"),
@@ -33,7 +40,7 @@ ui <- fluidPage(
             # Horizontal line ----
             tags$hr(),
             #Formatting
-            tags$p('Select correct formatting'),
+            tags$p('Select correct formatting (for csv files)'),
             # Input: Checkbox if file has header ----
             checkboxInput("header", "Header", TRUE),
 
@@ -93,89 +100,102 @@ ui <- fluidPage(
 # Define server logic to read selected file ----
 server <- function(input, output) {
 
-    output$contents <- renderTable({
+    # input$file1 will be NULL initially. After the user selects
+    # and uploads a file, head of that data file by default,
+    # or all rows if selected, will be shown.
 
-        # input$file1 will be NULL initially. After the user selects
-        # and uploads a file, head of that data file by default,
-        # or all rows if selected, will be shown.
-
+    df1 <- reactive({
         req(input$file1)
 
         # when reading semicolon separated files,
         # having a comma separator causes `read.csv` to error
         tryCatch(
             if(input$file1$datapath %>% grepl(pattern = ".csv")){
-                df <- read.csv(input$file1$datapath,
+                 read.csv(input$file1$datapath,
                                header = input$header,
                                sep = input$sep,
                                quote = input$quote)
             } else {
-                df <- readxl::read_excel(input$file1$datapath,
+                readxl::read_excel(input$file1$datapath,
                                          col_names = input$header)
             }
         )
-
-        if(input$disp == "head") {
-            return(head(df))
-        }
-        else {
-            return(df)
-        }
-
     })
-# Here we input the metadata into the app.
-    output$meta <- renderTable({
-
-        # input$file1 will be NULL initially. After the user selects
-        # and uploads a file, head of that data file by default,
-        # or all rows if selected, will be shown.
-
+    df2 <- reactive({
         req(input$file2)
 
         # when reading semicolon separated files,
         # having a comma separator causes `read.csv` to error
         tryCatch(
-            {
-                if(input$file2$datapath %>% grepl(pattern = ".csv")){
-                    df <- read.csv(input$file2$datapath,
-                                   header = input$header,
-                                   sep = input$sep,
-                                   quote = input$quote)
-                } else {
-                    df <- readxl::read_excel(input$file2$datapath,
+            if(input$file2$datapath %>% grepl(pattern = ".csv")){
+                read.csv(input$file1$datapath,
+                         header = input$header,
+                         sep = input$sep,
+                         quote = input$quote)
+            } else {
+                readxl::read_excel(input$file2$datapath,
                                    col_names = input$header)
-                }
-
-            },
-            error = function(e) {
-                # return a safeError if a parsing error occurs
-                stop(safeError(e))
             }
         )
+    })
+
+
+    output$contents <- renderTable({
 
         if(input$disp == "head") {
-            return(head(df))
+            return(head(df1()))
         }
         else {
-            return(df)
+            return(df1())
+        }
+
+    })
+# Here we input the metadata into the app.
+
+
+
+    output$meta <- renderTable({
+
+        if(input$disp == "head") {
+            return(head(df2()))
+        }
+        else {
+            return(df2())
         }
 
     })
     # save the data to server upon button click
     observeEvent(input$save, {
 
-        file.copy(input$file1$datapath, paste0("saved_data/",
+        write_csv(df1(), paste0("saved_data/",
                                                 Sys.time() %>% as.character() %>% gsub(pattern = "-| |:",replacement = "_"),
                                                "_",
                                                input$title %>% gsub(pattern = "-| |:",replacement = "_"),
                                                ".csv"))
-        file.copy(input$file2$datapath, paste0("saved_data/",
+        write_csv(df2(), paste0("saved_data/",
                                                 Sys.time() %>% as.character() %>% gsub(pattern = "-| |:",replacement = "_"),
                                                "_",
                                                input$title %>% gsub(pattern = "-| |:",replacement = "_"),
                                                "_meta.csv"))
     })
 
+    # Handler for template downloading
+    output$template_data <- downloadHandler(
+        filename <- function() {
+            paste("data_template", "xlsx", sep=".")
+        },
+        content <- function(file) {
+            file.copy("templates/data_template.xlsx", file)
+        }
+    )
+    output$template_metadata <- downloadHandler(
+        filename <- function() {
+            paste("metadata_template", "xlsx", sep=".")
+        },
+        content <- function(file) {
+            file.copy("templates/metadata_template.xlsx", file)
+        }
+    )
 }
 
 # Create Shiny app ----
