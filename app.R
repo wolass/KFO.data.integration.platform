@@ -177,6 +177,7 @@ server <- function(input, output) {
                                                "_",
                                                input$title %>% gsub(pattern = "-| |:",replacement = "_"),
                                                "_meta.csv"))
+        showNotification("Files were copied to the server")
     })
 
     # Handler for template downloading
