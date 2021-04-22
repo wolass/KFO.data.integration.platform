@@ -104,15 +104,14 @@ server <- function(input, output) {
         # when reading semicolon separated files,
         # having a comma separator causes `read.csv` to error
         tryCatch(
-            {
+            if(input$file1$datapath %>% grepl(pattern = ".csv")){
                 df <- read.csv(input$file1$datapath,
                                header = input$header,
                                sep = input$sep,
                                quote = input$quote)
-            },
-            error = function(e) {
-                # return a safeError if a parsing error occurs
-                stop(safeError(e))
+            } else {
+                df <- readxl::read_excel(input$file1$datapath,
+                                         col_names = input$header)
             }
         )
 
@@ -137,10 +136,16 @@ server <- function(input, output) {
         # having a comma separator causes `read.csv` to error
         tryCatch(
             {
-                df <- read.csv(input$file2$datapath,
-                               header = input$header,
-                               sep = input$sep,
-                               quote = input$quote)
+                if(input$file2$datapath %>% grepl(pattern = ".csv")){
+                    df <- read.csv(input$file2$datapath,
+                                   header = input$header,
+                                   sep = input$sep,
+                                   quote = input$quote)
+                } else {
+                    df <- readxl::read_excel(input$file2$datapath,
+                                   col_names = input$header)
+                }
+
             },
             error = function(e) {
                 # return a safeError if a parsing error occurs
